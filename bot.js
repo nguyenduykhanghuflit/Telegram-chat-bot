@@ -1,30 +1,34 @@
-const Telegram = require("node-telegram-bot-api");
-const { Configuration, OpenAIApi } = require("openai");
-
-const botToken = "Bot Token";
-const openaiToken = "Open Ai API Key";
+require('dotenv').config();
+const Telegram = require('node-telegram-bot-api');
+const { Configuration, OpenAIApi } = require('openai');
 
 const config = new Configuration({
-  apiKey: openaiToken,
+  apiKey: process.env.OPENAI_TOKEN,
 });
 
 const openai = new OpenAIApi(config);
 
-const bot = new Telegram(botToken, { polling: true });
+const bot = new Telegram(process.env.BOT_TOKEN, { polling: true });
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome To AI ChatBot");
+  bot.sendMessage(msg?.chat?.id, 'Welcome To AI ChatBot');
+  bot.sendMessage(
+    msg?.chat?.id,
+    'Để đặt câu hỏi hãy sử dụng lệnh " /a câu hỏi của bạn "'
+  );
 });
 
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
+bot.on('message', async (msg) => {
+  const chatId = msg?.chat?.id;
 
-  const reply = await openai.createCompletion({
-    max_tokens: 100,
-    model: "ada",
-    prompt: msg.text,
-    temperature: 0.5,
-  });
+  if (msg.text?.startsWith('/a ')) {
+    const reply = await openai.createCompletion({
+      max_tokens: 500,
+      model: 'text-davinci-003', //tìm hiểu tại:https://platform.openai.com/docs/models/overview
+      prompt: msg.text,
+      temperature: 0.5,
+    });
 
-  bot.sendMessage(chatId, reply.data.choices[0].text);
+    bot.sendMessage(chatId, reply?.data?.choices[0]?.text);
+  }
 });
