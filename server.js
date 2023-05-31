@@ -2,6 +2,9 @@ require('dotenv').config();
 const Telegram = require('node-telegram-bot-api');
 const { Configuration, OpenAIApi } = require('openai');
 
+const express = require('express');
+const app = express();
+
 const config = new Configuration({
   apiKey: process.env.OPENAI_TOKEN,
 });
@@ -31,4 +34,9 @@ bot.on('message', async (msg) => {
 
     bot.sendMessage(chatId, reply?.data?.choices[0]?.text);
   }
+});
+
+app.get('/', (req, res) => res.send('oke bot!!'));
+app.listen(3000, () => {
+  console.log('Bot is running in port 3000');
 });
