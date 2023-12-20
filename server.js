@@ -4,7 +4,7 @@ const Telegram = require('node-telegram-bot-api');
 const express = require('express');
 const app = express();
 const bot = new Telegram(process.env.BOT_TOKEN, { polling: true });
-// Định nghĩa một route đơn giản
+//deploy demo
 app.get('/', (req, res) => {
    res.send('Telegram bot service is running');
 });
