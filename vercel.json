@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "name": "chat bot ai",
-  "builds": [{ "src": "server.js", "use": "@vercel/node" }],
-  "routes": [{ "src": "/(.*)", "dest": "/server.js" }]
+   "version": 2,
+   "name": "telegram-apu",
+   "builds": [{ "src": "server.js", "use": "@vercel/node" }],
+   "routes": [{ "src": "/(.*)", "dest": "/server.js" }]
 }
