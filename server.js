@@ -1,97 +1,154 @@
 require('dotenv').config();
-const Telegram = require('node-telegram-bot-api');
-
 const express = require('express');
 const app = express();
+
+const { sendRequest } = require('./src/helpers');
+const API_URL = process.env.API_URL;
+
+const Telegram = require('node-telegram-bot-api');
 const bot = new Telegram(process.env.BOT_TOKEN, { polling: true });
-//deploy demo
+
 app.get('/', (req, res) => {
    res.send('Telegram bot service is running');
 });
 
 app.get('/send', (req, res) => {
-   const { msg, chatId } = req.query;
+   try {
+      let { msg, chatId, parse_mode } = req.query;
 
-   if (!msg || !chatId)
-      return res.status(400).json({ msg: 'msg or chatId invalid' });
+      const parseModeType = ['Markdown', 'MarkdownV2', 'HTML'];
+      if (!parseModeType.includes(parse_mode)) parse_mode = undefined;
 
-   bot.sendMessage(chatId, msg);
-   return res.status(200).json({ msg: 'Send success' });
+      if (!msg || !chatId) {
+         return res.status(200).json({
+            Success: false,
+            Message: 'msg or chatId invalid',
+            Result: null,
+            Code: 400,
+         });
+      }
+
+      bot.sendMessage(chatId, msg, { parse_mode });
+
+      return res.status(200).json({
+         Success: true,
+         Message: 'Send success',
+         Result: null,
+         Code: 200,
+      });
+   } catch (error) {
+      return res.status(200).json({
+         Success: false,
+         Message: error,
+         Result: null,
+         Code: 400,
+      });
+   }
 });
 
 bot.onText(/\/start/, (msg) => {
-   bot.sendMessage(
-      msg?.chat?.id,
-      '👻👻👻 Welcome to GoldenLotus Bot, bot này dùng để nhận thông báo về các task bạn được giao'
-   );
-   bot.sendMessage(
-      msg?.chat?.id,
-      '✍️✍️✍️ Để đăng ký nhận thông báo về task vui lòng nhập lệnh sau: /task my_userId'
-   );
-   bot.sendMessage(
-      msg?.chat?.id,
-      '🤳🤳🤳 Để biết được userId của mình là gì vui lòng truy cập https://crm.senvangsolutions.com/getuserid'
-   );
-});
-
-bot.onText(/\/task (.+)/, (msg, match) => {
-   const chatId = msg?.chat?.id;
-   console.log(chatId);
    try {
-      const userId = match[1];
-      //VẦN VALIDATE LẠI USERID, lưu user ứng chatid vào đb
-      //cần check xem chatid này đã có đăng ký nhận thông báo chưa
+      const msgTemplate = `
+    <strong>🖖🖖🖖Chào mừng bạn đến với GoldenLotus Bot🖖🖖🖖</strong>
+    <i>Bot này được sử dụng để nhận thông báo về các công việc bạn được giao</i>
+    <strong>===========================</strong>
+ 
+    ---  Để đăng ký nhận thông báo về công việc, vui lòng nhập lệnh:
+    <code>/task my_userId</code>
+ 
+    ---  Để biết <strong>userId</strong> của bạn, vui lòng truy cập trang:
+    <code>https://crm.senvangsolutions.com/Account/GetUserId</code>
+    `;
 
-      bot.sendMessage(
-         chatId,
-         `🌟🌟🌟 Bạn đã đăng ký nhận thông báo công việc thành công với userId: ${userId}`
-      );
-      bot.sendMessage(
-         chatId,
-         `🔥🔥🔥 Nếu bạn nhập sai userId? Đừng lo lắng hãy nhập lệnh sau:/change new_userId`
-      );
-      bot.sendMessage(
-         chatId,
-         `🧑🏽‍💻🧑🏽‍💻🧑🏽‍💻 Nếu bạn muốn tắt nhận thông báo, hoặc thay đổi userId vui lòng liên hệ admin nhé`
-      );
-   } catch (error) {
-      bot.sendMessage(chatId, 'Bot gặp lỗi rồi, vui lòng thử lại sau nhé!!');
-   }
-});
-
-bot.onText(/\/change (.+)/, (msg, match) => {
-   const chatId = msg?.chat?.id;
-   try {
-      const userId = match[1];
-      //VẦN VALIDATE LẠI USERID, lưu user ứng chatid vào đb
-      //cần check xem chatid đã tồn tại userid này chưa
-
-      bot.sendMessage(
-         chatId,
-         `🌟🌟🌟 Bạn đã thay đổi userId nhận thông báo thành: ${userId}`
-      );
-      bot.sendMessage(
-         chatId,
-         `🔥🔥🔥 Nếu bạn nhập sai userId? Đừng lo lắng hãy nhập lệnh sau:/change new_userId`
-      );
-      bot.sendMessage(
-         chatId,
-         `🧑🏽‍💻🧑🏽‍💻🧑🏽‍💻 Nếu bạn muốn tắt nhận thông báo, hoặc thay đổi userId vui lòng liên hệ admin nhé`
-      );
-   } catch (error) {
-      bot.sendMessage(
-         chatId,
-         '💥💥💥💥 Bot gặp lỗi rồi, vui lòng thử lại sau nhé!!'
-      );
-   }
-});
-
-bot.on('message', async (msg) => {
-   const chatId = msg?.chat?.id;
-   console.log(chatId);
-   try {
+      bot.sendMessage(msg?.chat?.id, msgTemplate, {
+         parse_mode: 'HTML',
+      });
    } catch (error) {
       console.log(error);
+      bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
+         parse_mode: 'HTML',
+      });
+   }
+});
+
+bot.onText(/\/task (.+)/, async (msg, match) => {
+   const chatId = msg?.chat?.id;
+   try {
+      const userId = match[1];
+
+      const postOptions = {
+         body: {
+            UserId: userId,
+            ChatId: chatId,
+         },
+      };
+      const result = await sendRequest(
+         API_URL + '/InsertTelegramChatId',
+         'POST',
+         postOptions
+      );
+
+      if (result.Success && result.Code == 200) {
+         const msgTemplate = `
+                   <b>=====================================================</b>
+                   <b>🔥🔥🔥Bạn đã đăng ký nhận thông báo công việc thành công</b>
+                   <b>🔥🔥🔥Nếu bạn nhập sai <i>userId</i>, vui lòng nhập lệnh sau để thay đổi:</b>
+                   <code>/change new_userId</code>
+          `;
+
+         bot.sendMessage(chatId, msgTemplate, {
+            parse_mode: 'HTML',
+         });
+      } else {
+         bot.sendMessage(chatId, result.Message, {
+            parse_mode: 'HTML',
+         });
+      }
+   } catch (error) {
+      console.log(error);
+      bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
+         parse_mode: 'HTML',
+      });
+   }
+});
+
+bot.onText(/\/change (.+)/, async (msg, match) => {
+   const chatId = msg?.chat?.id;
+   try {
+      const userId = match[1];
+
+      const postOptions = {
+         body: {
+            UserId: userId,
+            ChatId: chatId,
+         },
+      };
+      const result = await sendRequest(
+         API_URL + '/UpdateTelegramChatId',
+         'POST',
+         postOptions
+      );
+
+      if (result.Success && result.Code == 200) {
+         const msgTemplate = `
+          <b>=====================================================</b>
+          <strong>🔥🔥🔥 Bạn đã thay đổi userId nhận thông báo thành</strong>
+          <strong>🔥🔥🔥 Nếu bạn nhập sai <i>userId</i>, vui lòng nhập lệnh sau để thay đổi: </strong>
+          <code>/change new_userId</code>
+          `;
+
+         bot.sendMessage(chatId, msgTemplate, {
+            parse_mode: 'HTML',
+         });
+      } else {
+         bot.sendMessage(chatId, result.Message, {
+            parse_mode: 'HTML',
+         });
+      }
+   } catch (error) {
+      bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
+         parse_mode: 'HTML',
+      });
    }
 });
 
