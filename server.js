@@ -1,155 +1,49 @@
-require('dotenv').config();
 const express = require('express');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
 const app = express();
 
-const { sendRequest } = require('./src/helpers');
-const API_URL = process.env.API_URL;
+const corsOptions = {
+   origin: '*',
+};
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use(
+   express.urlencoded({
+      extended: true,
+   })
+);
+app.use(express.json());
 
 const Telegram = require('node-telegram-bot-api');
-const bot = new Telegram(process.env.BOT_TOKEN, { polling: true });
+const getEnv = require('./src/common/env');
+const CRM = require('./src/bot/crm-bot');
+const MIN_FAST = require('./src/bot/minfast-bot');
+const coreAPIs = require('./src/apis/core');
 
-app.get('/', (req, res) => {
-   res.send('Telegram bot service is running');
+//* Mỗi 1 token chỉ được sử dụng cho 1 instance của bot và chỉ sử dụng ở 1 nơi
+//* Trong quá trình dev nên tạo 1 bot riêng để dev và độc lập với bot ở production
+const crmBot = new Telegram(getEnv().CRM_BOT_TOKEN, { polling: true });
+
+const minFastBot = new Telegram(getEnv().MF_BOT_TOKEN, { polling: true });
+
+const logBot = new Telegram(getEnv().LOG_BOT_TOKEN, { polling: true });
+
+//lắng nghe các sự kiện ở CRM BOT
+CRM(crmBot, logBot);
+
+//lắng nghe các sự kiện ở MIN_FAST BOT
+MIN_FAST(minFastBot, logBot);
+
+//api dùng chung
+coreAPIs(app, crmBot, minFastBot, logBot);
+
+app.listen(8990, () => {
+   console.log('🚀 🚀 ~ Telegram bot service is running on port 8990 🚀 🚀');
+   logBot.sendMessage(
+      getEnv().MY_CHAT_ID,
+      '🚀 🚀 ~ Telegram bot service is running on port 8990 🚀 🚀',
+      { parse_mode: 'HTML' }
+   );
 });
-
-app.get('/send', (req, res) => {
-   try {
-      let { msg, chatId, parse_mode } = req.query;
-
-      const parseModeType = ['Markdown', 'MarkdownV2', 'HTML'];
-      if (!parseModeType.includes(parse_mode)) parse_mode = undefined;
-
-      if (!msg || !chatId) {
-         return res.status(200).json({
-            Success: false,
-            Message: 'msg or chatId invalid',
-            Result: null,
-            Code: 400,
-         });
-      }
-
-      bot.sendMessage(chatId, msg, { parse_mode });
-
-      return res.status(200).json({
-         Success: true,
-         Message: 'Send success',
-         Result: null,
-         Code: 200,
-      });
-   } catch (error) {
-      return res.status(200).json({
-         Success: false,
-         Message: error,
-         Result: null,
-         Code: 400,
-      });
-   }
-});
-
-bot.onText(/\/start/, (msg) => {
-   try {
-      const msgTemplate = `
-    <strong>🖖🖖🖖Chào mừng bạn đến với GoldenLotus Bot🖖🖖🖖</strong>
-    <i>Bot này được sử dụng để nhận thông báo về các công việc bạn được giao</i>
-    <strong>===========================</strong>
- 
-    ---  Để đăng ký nhận thông báo về công việc, vui lòng nhập lệnh:
-    <code>/task my_userId</code>
- 
-    ---  Để biết <strong>userId</strong> của bạn, vui lòng truy cập trang:
-    <code>https://crm.senvangsolutions.com/Account/GetUserId</code>
-    `;
-
-      bot.sendMessage(msg?.chat?.id, msgTemplate, {
-         parse_mode: 'HTML',
-      });
-   } catch (error) {
-      console.log(error);
-      bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
-         parse_mode: 'HTML',
-      });
-   }
-});
-
-bot.onText(/\/task (.+)/, async (msg, match) => {
-   const chatId = msg?.chat?.id;
-   try {
-      const userId = match[1];
-
-      const postOptions = {
-         body: {
-            UserId: userId,
-            ChatId: chatId,
-         },
-      };
-      const result = await sendRequest(
-         API_URL + '/InsertTelegramChatId',
-         'POST',
-         postOptions
-      );
-
-      if (result.Success && result.Code == 200) {
-         const msgTemplate = `
-                   <b>=====================================================</b>
-                   <b>🔥🔥🔥Bạn đã đăng ký nhận thông báo công việc thành công</b>
-                   <b>🔥🔥🔥Nếu bạn nhập sai <i>userId</i>, vui lòng nhập lệnh sau để thay đổi:</b>
-                   <code>/change new_userId</code>
-          `;
-
-         bot.sendMessage(chatId, msgTemplate, {
-            parse_mode: 'HTML',
-         });
-      } else {
-         bot.sendMessage(chatId, result.Message, {
-            parse_mode: 'HTML',
-         });
-      }
-   } catch (error) {
-      console.log(error);
-      bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
-         parse_mode: 'HTML',
-      });
-   }
-});
-
-bot.onText(/\/change (.+)/, async (msg, match) => {
-   const chatId = msg?.chat?.id;
-   try {
-      const userId = match[1];
-
-      const postOptions = {
-         body: {
-            UserId: userId,
-            ChatId: chatId,
-         },
-      };
-      const result = await sendRequest(
-         API_URL + '/UpdateTelegramChatId',
-         'POST',
-         postOptions
-      );
-
-      if (result.Success && result.Code == 200) {
-         const msgTemplate = `
-          <b>=====================================================</b>
-          <strong>🔥🔥🔥 Bạn đã thay đổi userId nhận thông báo thành</strong>
-          <strong>🔥🔥🔥 Nếu bạn nhập sai <i>userId</i>, vui lòng nhập lệnh sau để thay đổi: </strong>
-          <code>/change new_userId</code>
-          `;
-
-         bot.sendMessage(chatId, msgTemplate, {
-            parse_mode: 'HTML',
-         });
-      } else {
-         bot.sendMessage(chatId, result.Message, {
-            parse_mode: 'HTML',
-         });
-      }
-   } catch (error) {
-      bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
-         parse_mode: 'HTML',
-      });
-   }
-});
-
-app.listen(8080, () => console.log('Telegram bot service is running'));
