@@ -1,5 +1,6 @@
 const {
    getToDateString,
+   getYesterdayDate,
    apiOk,
    apiErr,
    checkRequiredFields,

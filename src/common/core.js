@@ -109,4 +109,5 @@ module.exports = {
    apiOk,
    checkRequiredFields,
    getToDateString,
+   getYesterdayDate,
 };

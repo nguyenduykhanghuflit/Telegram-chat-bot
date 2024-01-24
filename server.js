@@ -24,6 +24,7 @@ const coreAPIs = require('./src/apis/core');
 
 //* Mỗi 1 token chỉ được sử dụng cho 1 instance của bot và chỉ sử dụng ở 1 nơi
 //* Trong quá trình dev nên tạo 1 bot riêng để dev và độc lập với bot ở production
+
 const crmBot = new Telegram(getEnv().CRM_BOT_TOKEN, { polling: true });
 
 const minFastBot = new Telegram(getEnv().MF_BOT_TOKEN, { polling: true });

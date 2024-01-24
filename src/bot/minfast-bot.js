@@ -3,6 +3,11 @@ const getEnv = require('../common/env');
 const MIN_FAST = (bot, logBot) => {
    bot.onText(/\/start/, (msg) => {
       const chatId = msg?.chat?.id;
+
+      logBot.sendMessage(getEnv().MY_CHAT_ID, 'start ' + chatId, {
+         parse_mode: 'HTML',
+      });
+
       try {
          const msgTemplate = `
          <b> 👋👋Chào mừng bạn đã đến với GLS MIN-FAST BOT 🙋🙋</b>
@@ -32,6 +37,9 @@ const MIN_FAST = (bot, logBot) => {
 
    bot.onText(/\/minfast/, async (msg, match) => {
       const chatId = msg?.chat?.id;
+      logBot.sendMessage(getEnv().MY_CHAT_ID, 'minfast ' + chatId, {
+         parse_mode: 'HTML',
+      });
       try {
          const result = await sendRequest(
             getEnv().MF_API_URL + '/RegisterNotifyTelegram?chatId=' + chatId,

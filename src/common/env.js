@@ -1,4 +1,6 @@
+require('dotenv').config();
 const environment = process.env.NODE_ENV || 'development';
+console.log('Môi trường hiện tại: ' + process.env.NODE_ENV);
 require('dotenv').config({
    path: environment === 'production' ? '.env.production' : '.env.dev',
 });
