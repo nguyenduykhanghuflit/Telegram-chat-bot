@@ -37,14 +37,13 @@ CRM(crmBot, logBot);
 //lắng nghe các sự kiện ở MIN_FAST BOT
 MIN_FAST(minFastBot, logBot);
 
-//api dùng chung
 coreAPIs(app, crmBot, minFastBot, logBot);
 
-app.listen(8990, () => {
-   console.log('🚀 🚀 ~ Telegram bot service is running on port 8990 🚀 🚀');
-   logBot.sendMessage(
-      getEnv().MY_CHAT_ID,
-      '🚀 🚀 ~ Telegram bot service is running on port 8990 🚀 🚀',
-      { parse_mode: 'HTML' }
-   );
+app.listen(getEnv().PORT || 8990, () => {
+   const msg = `🚀 🚀 ~ Telegram bot service is running on port ${
+      getEnv().PORT || 8990
+   } 🚀 🚀`;
+
+   console.log(msg);
+   logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });
 });

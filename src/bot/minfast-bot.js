@@ -42,7 +42,9 @@ const MIN_FAST = (bot, logBot) => {
       });
       try {
          const result = await sendRequest(
-            getEnv().MF_API_URL + '/RegisterNotifyTelegram?chatId=' + chatId,
+            getEnv().MF_API_URL +
+               '/CheckMinFast/RegisterNotifyTelegram?chatId=' +
+               chatId,
             'GET'
          );
 

@@ -45,7 +45,7 @@ const CRM = (bot, logBot) => {
             },
          };
          const result = await sendRequest(
-            getEnv().CRM_API_URL + '/InsertTelegramChatId',
+            getEnv().CRM_API_URL + '/Account/InsertTelegramChatId',
             'POST',
             postOptions
          );

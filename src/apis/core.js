@@ -1,17 +1,18 @@
 const {
+   BASE_API_ENDPOINT,
+   BOT_TYPE,
+   PART_MODE_TYPE,
+} = require('../common/const');
+
+const {
    getToDateString,
    getYesterdayDate,
    apiOk,
    apiErr,
    checkRequiredFields,
 } = require('../common/core');
+
 const getEnv = require('../common/env');
-
-const BASE_API_ENDPOINT = '/api';
-
-const BOT_TYPE = ['crm', 'minfast'];
-
-const parseModeType = ['Markdown', 'MarkdownV2', 'HTML'];
 
 const coreAPIs = (app, crmBot, minFastBot, logBot) => {
    app.get('/', (req, res) => {
@@ -37,7 +38,7 @@ const coreAPIs = (app, crmBot, minFastBot, logBot) => {
                400
             );
 
-         if (!parseModeType.includes(parse_mode)) parse_mode = undefined;
+         if (!PART_MODE_TYPE.includes(parse_mode)) parse_mode = undefined;
 
          switch (bot_type) {
             case 'crm':
