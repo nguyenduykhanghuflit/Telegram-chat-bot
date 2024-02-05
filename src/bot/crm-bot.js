@@ -1,8 +1,8 @@
-const { sendRequest, getToDateString } = require('../common/core');
+const { sendRequest, getToDateString, sendLogErr } = require('../common/core');
 const getEnv = require('../common/env');
 
 const CRM = (bot, logBot) => {
-   bot.onText(/\/start/, (msg) => {
+   bot.onText(/\/start/, async (msg) => {
       try {
          const msgTemplate = `
          <strong>🖖🖖🖖Chào mừng bạn đến với GoldenLotus Bot🖖🖖🖖</strong>
@@ -16,9 +16,13 @@ const CRM = (bot, logBot) => {
          <code>https://crm.senvangsolutions.com/Account/GetUserId</code>
          `;
 
-         bot.sendMessage(msg?.chat?.id, msgTemplate, {
-            parse_mode: 'HTML',
-         });
+         const { message_id } = await bot.sendMessage(
+            msg?.chat?.id,
+            msgTemplate,
+            {
+               parse_mode: 'HTML',
+            }
+         );
       } catch (error) {
          const title = `Lỗi CRM BOT \n`;
          const time = `Thời gian: ${getToDateString()} \n`;
@@ -117,6 +121,27 @@ const CRM = (bot, logBot) => {
          const title = `Lỗi CRM BOT \n`;
          const time = `Thời gian: ${getToDateString()} \n`;
          const command = 'Command: /change \n';
+         const err = `Chi tiết: \n\t => ${error.toString()} \n`;
+         const msg = `${title}${time}${command}${err}`;
+         logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });
+
+         bot.sendMessage(chatId, 'Bot gặp lỗi, vui lòng thử lại sau!!', {
+            parse_mode: 'HTML',
+         });
+      }
+   });
+
+   bot.onText(/\/r/, (msg) => {
+      try {
+         console.log(msg);
+
+         bot.sendMessage(msg?.chat?.id, 'reply', {
+            parse_mode: 'HTML',
+         });
+      } catch (error) {
+         const title = `Lỗi CRM BOT \n`;
+         const time = `Thời gian: ${getToDateString()} \n`;
+         const command = 'Command: /start \n';
          const err = `Chi tiết: \n\t => ${error.toString()} \n`;
          const msg = `${title}${time}${command}${err}`;
          logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });

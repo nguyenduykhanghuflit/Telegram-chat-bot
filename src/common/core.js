@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const axios = require('axios');
-
+const getEnv = require('./env');
 async function sendRequest(url, method, options = {}) {
    try {
       let response;
@@ -103,6 +103,34 @@ const apiOk = (res, msg = 'Send successfully', code = 200, result = null) => {
    });
 };
 
+const sendLogErrCmd = (
+   logBot,
+   titleText = 'Lỗi MIN-FAST BOT \n',
+   cmd,
+   error
+) => {
+   const title = titleText;
+   const time = `Thời gian: ${getToDateString()} \n`;
+   const command = `Command: /${cmd} \n`;
+   const err = `Chi tiết: \n\t => ${error} \n`;
+   const msg = `${title}${time}${command}${err}`;
+   logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });
+};
+
+const sendLogErrApi = (
+   logBot,
+   titleText = 'Lỗi API Min-Fast \n',
+   apiUrl,
+   error
+) => {
+   const title = titleText;
+   const time = `Thời gian: ${getToDateString()} \n`;
+   const api = `API: ${apiUrl} \n`;
+   const err = `Chi tiết: \n\t => ${error} \n`;
+   const msg = `${title}${time}${api}${err}`;
+   logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });
+};
+
 module.exports = {
    sendRequest,
    apiErr,
@@ -110,4 +138,6 @@ module.exports = {
    checkRequiredFields,
    getToDateString,
    getYesterdayDate,
+   sendLogErrCmd,
+   sendLogErrApi,
 };

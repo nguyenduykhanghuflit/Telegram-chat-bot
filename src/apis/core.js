@@ -1,7 +1,7 @@
 const {
    BASE_API_ENDPOINT,
    BOT_TYPE,
-   PART_MODE_TYPE,
+   PARSE_MODE_TYPE,
 } = require('../common/const');
 
 const {
@@ -10,6 +10,7 @@ const {
    apiOk,
    apiErr,
    checkRequiredFields,
+   sendLogErrApi,
 } = require('../common/core');
 
 const getEnv = require('../common/env');
@@ -38,7 +39,7 @@ const coreAPIs = (app, crmBot, minFastBot, logBot) => {
                400
             );
 
-         if (!PART_MODE_TYPE.includes(parse_mode)) parse_mode = undefined;
+         if (!PARSE_MODE_TYPE.includes(parse_mode)) parse_mode = undefined;
 
          switch (bot_type) {
             case 'crm':
@@ -54,16 +55,13 @@ const coreAPIs = (app, crmBot, minFastBot, logBot) => {
          return apiOk(res);
       } catch (error) {
          const title = `Lỗi API Gửi thông báo (${bot_type})\n`;
-         const time = `Thời gian: ${getToDateString()} \n`;
-         const api = 'API: /send-message \n';
-         const err = `Chi tiết: \n\t => ${error.toString()} \n`;
-         const msg = `${title}${time}${api}${err}`;
-         logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });
+         sendLogErrApi(logBot, title, '/api/send-message', error.toString());
+
          return apiErr(res, 'Server Error', 500, error.message);
       }
    });
 
-   app.post(`${BASE_API_ENDPOINT}/min-fast/send-data`, (req, res) => {
+   app.post(`${BASE_API_ENDPOINT}/min-fast/send-data`, async (req, res) => {
       try {
          const {
             title,
@@ -77,19 +75,46 @@ const coreAPIs = (app, crmBot, minFastBot, logBot) => {
          let detailErr = '';
 
          listBranchFailure.forEach((element, idx) => {
-            const errCheck = element.errorCheck
-               ? `Doanh thu: ${element.errorCheck},`
-               : '';
+            const msgCheckRevenue = element.errorCheck
+               ? `KT Doanh thu: ${element.errorCheck}`
+               : 'KT Doanh thu: ✅ Pass';
 
-            const errorCheckEod = element.errorCheckEod
-               ? `EOD: ${element.errorCheckEod}`
-               : '';
+            const errEod = element?.errorCheckEod?.split(',');
 
-            const errLine = ` <b>${idx + 1}: ${
-               element.branchName
-            }</b>\n \t \t <i> => ${errCheck} ${errorCheckEod}</i>\n`;
+            let msgCheckEod2 = '',
+               msgCheckEod1 = '',
+               sign = '';
+            if (errEod?.length > 1) {
+               const parts = errEod[0].split('- Kí hiệu');
+               msgCheckEod1 = `EOD 1 ngày trước: ${parts[0]}`;
+               sign = '-> Kí hiệu ' + parts[1];
+               msgCheckEod2 = `EOD 2 ngày trước: ${errEod[1]}`;
+            }
+            if (errEod?.length == 1) {
+               if (errEod[0].includes('Kí hiệu')) {
+                  const parts = errEod[0].split('- Kí hiệu');
+                  msgCheckEod1 = `EOD 1 ngày trước: ${parts[0]}`;
+                  sign = '-> Kí hiệu ' + parts[1];
+               } else {
+                  msgCheckEod2 = `EOD 2 ngày trước: ${errEod[1]}`;
+               }
+            }
 
-            detailErr += errLine;
+            msgCheckEod2 = msgCheckEod2 || 'EOD 2 ngày trước: ✅ Pass';
+            msgCheckEod1 = msgCheckEod1 || 'EOD 1 ngày trước: ✅ Pass';
+            sign = sign || '';
+            const rowNum = idx + 1;
+            const errLine =
+               `${rowNum}: ${element.branchName}` +
+               `\n \t \t  => ${msgCheckRevenue}` +
+               `\n \t \t  => ${msgCheckEod2}` +
+               `\n \t \t  => ${msgCheckEod1}` +
+               `\n \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t \t  ${sign} \n \n`;
+            if (idx == 0) {
+               detailErr += `${errLine}`;
+            } else {
+               detailErr += `\t \t ${errLine}`;
+            }
          });
 
          const msgTemplate = {
@@ -100,18 +125,27 @@ const coreAPIs = (app, crmBot, minFastBot, logBot) => {
             detailErr: `\n \t \t ${detailErr}`,
          };
 
-         const msg = `${msgTemplate.title}${msgTemplate.countBranchSuccess}${msgTemplate.countBranchFailure}${msgTemplate.detail}${msgTemplate.detailErr}`;
+         const MAX_MESSAGE_LENGTH = 4000;
 
-         minFastBot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+         let msg = `${msgTemplate.title}${msgTemplate.countBranchSuccess}${msgTemplate.countBranchFailure}${msgTemplate.detail}${msgTemplate.detailErr}`;
+
+         while (msg.length > 0) {
+            const messagePart = msg.substring(0, MAX_MESSAGE_LENGTH);
+            msg = msg.substring(MAX_MESSAGE_LENGTH);
+            await minFastBot.sendMessage(chatId, messagePart, {
+               parse_mode: 'HTML',
+            });
+         }
+
          return apiOk(res);
       } catch (error) {
-         const title = 'Lỗi API Min-FAST \n';
-         const time = `Thời gian: ${getToDateString()} \n`;
-         const api = 'API: /min-fast/send-data \n';
-         const err = `Chi tiết: \n\t => ${error.toString()} \n`;
-         const msg = `${title}${time}${api}${err}`;
-         logBot.sendMessage(getEnv().MY_CHAT_ID, msg, { parse_mode: 'HTML' });
-
+         const title = `Lỗi API gửi thông báo check data \n`;
+         sendLogErrApi(
+            logBot,
+            title,
+            '/api/min-fast/send-data',
+            error.toString()
+         );
          return apiErr(res, 'Server Error', 500, error.toString());
       }
    });

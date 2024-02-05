@@ -1,16 +1,19 @@
 {
-   "name": "telegram-nodejs-bot",
+   "name": "telegram-bot-nodejs",
    "version": "1.0.0",
-   "description": "Nodejs AI Bot",
+   "description": "build telegram bot with nodejs",
    "main": "server.js",
    "scripts": {
       "test": "echo \"Error: no test specified\" && exit 1",
       "start": "nodemon node server.js",
-      "build": "babel src -d dist"
+      "build": "babel src -d build/src && babel server.js -o build/server.js"
    },
    "keywords": [
       "nodejs",
-      "telegram"
+      "telegram",
+      "telegram bot",
+      "multiple telegram bot nodejs",
+      "multiple telegram bot"
    ],
    "author": "KhangNguyen",
    "license": "ISC",
