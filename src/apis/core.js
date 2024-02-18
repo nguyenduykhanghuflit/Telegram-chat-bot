@@ -86,15 +86,17 @@ const coreAPIs = (app, crmBot, minFastBot, logBot) => {
                sign = '';
             if (errEod?.length > 1) {
                const parts = errEod[0].split('- Kí hiệu');
-               msgCheckEod1 = `EOD 1 ngày trước: ${parts[0]}`;
-               sign = '-> Kí hiệu ' + parts[1];
+               msgCheckEod1 = parts[0] ? `EOD 1 ngày trước: ${parts[0]}` : null;
+               sign = parts[1] ? '-> Kí hiệu ' + parts[1] : 'Fail';
                msgCheckEod2 = `EOD 2 ngày trước: ${errEod[1]}`;
             }
             if (errEod?.length == 1) {
                if (errEod[0].includes('Kí hiệu')) {
                   const parts = errEod[0].split('- Kí hiệu');
-                  msgCheckEod1 = `EOD 1 ngày trước: ${parts[0]}`;
-                  sign = '-> Kí hiệu ' + parts[1];
+                  msgCheckEod1 = parts[0]
+                     ? `EOD 1 ngày trước: ${parts[0]}`
+                     : 'Fail';
+                  sign = parts[1] ? '-> Kí hiệu ' + parts[1] : null;
                } else {
                   msgCheckEod2 = `EOD 2 ngày trước: ${errEod[1]}`;
                }
