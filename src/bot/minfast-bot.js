@@ -2,12 +2,12 @@ const {
    sendRequest,
    getToDateString,
    sendLogErrCmd,
+   getYesterdayDate,
 } = require('../common/core');
 const getEnv = require('../common/env');
 const MIN_FAST = (bot, logBot) => {
    bot.onText(/\/start/, (msg) => {
       const { id, first_name, username } = msg?.chat;
-
       const startMsg = `ChatId: ${id} \nFirstName: ${first_name} \nUserName: ${username}`;
 
       logBot.sendMessage(

@@ -55,8 +55,7 @@ function getYesterdayDate() {
    return (
       yesterday.getDate() +
       '/' +
-      yesterday.getMonth() +
-      1 +
+      Number(yesterday.getMonth() + 1) +
       '/' +
       yesterday.getFullYear()
    );
